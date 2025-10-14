@@ -1,20 +1,7 @@
-# --- Base build tools ---
 pip>=24.2
 setuptools>=75.1.0
 wheel
-
-# --- Core Data Science stack ---
-numpy==1.26.4
-pandas==1.5.3
-scikit-learn==1.2.2
-joblib==1.4.2
-
-# --- App framework ---
-streamlit==1.35.0
-
-# --- Optional visualization & utilities ---
-matplotlib==3.7.3
-seaborn==0.12.2
-
-# --- (Optional) Serialization / Model I/O ---
-pickle5==0.0.12
+numpy==2.1.1
+pandas==2.2.3
+scikit-learn==1.5.2
+streamlit==1.39.0
