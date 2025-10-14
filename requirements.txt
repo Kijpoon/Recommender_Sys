@@ -1,7 +1,12 @@
+# --- Build tools ---
 pip>=24.2
 setuptools>=75.1.0
 wheel
-numpy==2.1.1
-pandas==2.2.3
-scikit-learn==1.5.2
-streamlit==1.39.0
+
+# --- Core Data Science stack ---
+numpy==1.26.4
+pandas==1.5.3
+scikit-learn==1.2.2
+
+# --- Streamlit App ---
+streamlit==1.35.0
