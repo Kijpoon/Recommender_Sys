@@ -49,7 +49,7 @@ try:
                     user_id=user_id,
                     user_similarity_df=user_similarity_df,
                     user_movie_ratings=user_movie_ratings,
-                    top_n=10
+                    n_recommendations=10
                 )
 
                 if recommendations:
