@@ -1,71 +1,54 @@
 import streamlit as st
-import pandas as pd
 import pickle
+import pandas as pd
 from myfunction_67130700333 import get_movie_recommendations
 
-# --- Page Configuration ---
-st.set_page_config(
-    page_title="🎬 Movie Recommender",
-    page_icon="🎥",
-    layout="centered"
-)
+st.set_page_config(page_title="🎬 Movie Recommendation App", layout="centered")
 
-# --- Load Data ---
-@st.cache_data(show_spinner=False)
-def load_data():
-    """Load precomputed recommendation data."""
-    with open("recommendation_data.pkl", "rb") as f:
-        user_similarity_df, user_movie_ratings = pickle.load(f)
-    return user_similarity_df, user_movie_ratings
+st.title("🎥 Movie Recommendation System")
+st.markdown("Upload your data file and choose parameters to get personalized recommendations.")
 
+# --- Step 1: Upload the pickle data file ---
+uploaded_file = st.file_uploader("📂 Upload Recommendation Data (.pkl)", type=["pkl"])
 
-# --- Main UI ---
-st.title("🎬 Movie Recommendation System")
-st.markdown(
-    """
-    Welcome to the **Movie Recommender** app!  
-    Enter your user ID to get personalized movie suggestions  
-    based on your viewing similarity with other users.
-    """
-)
+if uploaded_file is not None:
+    data = pickle.load(uploaded_file)
+    
+    # Expect the file to contain required dataframes
+    user_similarity_df = data.get("user_similarity_df")
+    user_movie_ratings = data.get("user_movie_ratings")
 
-try:
-    user_similarity_df, user_movie_ratings = load_data()
+    if user_similarity_df is not None and user_movie_ratings is not None:
+        st.success("✅ Data successfully loaded!")
 
-    max_user_id = int(user_movie_ratings.index.max())
+        # --- Step 2: Choose user and parameters ---
+        st.subheader("⚙️ Choose Parameters")
+        user_id = st.selectbox("Select User ID:", user_similarity_df.index.tolist())
+        n_recommendations = st.slider("Number of recommendations:", 1, 20, 5)
 
-    user_id = st.number_input(
-        "Enter a User ID:",
-        min_value=1,
-        max_value=max_user_id,
-        value=1,
-        step=1
-    )
+        # Show parameter table
+        param_table = pd.DataFrame({
+            "Parameter": ["User ID", "Number of Recommendations"],
+            "Value": [user_id, n_recommendations]
+        })
+        st.table(param_table)
 
-    if st.button("🎯 Get Recommendations"):
-        with st.spinner("Finding your best matches..."):
+        # --- Step 3: Get Recommendations ---
+        if st.button("🎯 Get Recommendations"):
             try:
                 recommendations = get_movie_recommendations(
-                    user_id=user_id,
-                    user_similarity_df=user_similarity_df,
-                    user_movie_ratings=user_movie_ratings,
-                    n_recommendations=10
+                    user_id, user_similarity_df, user_movie_ratings, n_recommendations
                 )
 
                 if recommendations:
-                    st.success(f"Top 10 movie recommendations for User {user_id}:")
-                    st.write("")  # spacing
-                    for i, movie in enumerate(recommendations, start=1):
-                        st.markdown(f"**{i}. {movie}** 🎞️")
+                    st.success("✅ Recommendations generated!")
+                    st.write("### 🍿 Recommended Movies:")
+                    st.write(pd.DataFrame({"Movie": recommendations}))
                 else:
-                    st.warning("No recommendations available for this user yet.")
-
+                    st.warning("No recommendations found for this user.")
             except Exception as e:
-                st.error(f"⚠️ Error during recommendation: {e}")
-
-except FileNotFoundError:
-    st.error("❌ Data file `recommendation_data.pkl` not found.")
-    st.info("Please ensure the file exists in the same directory as this script.")
-except ImportError:
-    st.error("❌ Function file `myfunction_67130700333.py` not found.")
-    st.info("Please ensure your function script is uploaded.")
+                st.error(f"Error generating recommendations: {e}")
+    else:
+        st.error("❌ Missing expected keys in your .pkl file: 'user_similarity_df' or 'user_movie_ratings'")
+else:
+    st.info("👆 Please upload your `.pkl` file to begin.")
