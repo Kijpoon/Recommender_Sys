@@ -1,111 +1,71 @@
 import streamlit as st
-import pickle
 import pandas as pd
+import pickle
 from myfunction_67130700333 import get_movie_recommendations
 
-# ---------- PAGE CONFIG ----------
+# --- Page Configuration ---
 st.set_page_config(
-    page_title="🎬 Smart Movie Recommender",
+    page_title="🎬 Movie Recommender",
     page_icon="🎥",
     layout="centered"
 )
 
-# ---------- TITLE SECTION ----------
+# --- Load Data ---
+@st.cache_data(show_spinner=False)
+def load_data():
+    """Load precomputed recommendation data."""
+    with open("recommendation_data.pkl", "rb") as f:
+        user_similarity_df, user_movie_ratings = pickle.load(f)
+    return user_similarity_df, user_movie_ratings
+
+
+# --- Main UI ---
+st.title("🎬 Movie Recommendation System")
 st.markdown(
     """
-    <h1 style='text-align: center; color: #FF4B4B;'>🎬 Smart Movie Recommender System</h1>
-    <p style='text-align: center; color: gray;'>Upload your data → Choose parameters → Get recommendations instantly!</p>
-    <hr>
-    """,
-    unsafe_allow_html=True
+    Welcome to the **Movie Recommender** app!  
+    Enter your user ID to get personalized movie suggestions  
+    based on your viewing similarity with other users.
+    """
 )
 
-# ---------- UPLOAD FILE ----------
-uploaded_file = st.file_uploader("📂 Upload your recommendation data (.pkl)", type=["pkl"])
+try:
+    user_similarity_df, user_movie_ratings = load_data()
 
-if uploaded_file is not None:
-    data = pickle.load(uploaded_file)
+    max_user_id = int(user_movie_ratings.index.max())
 
-    user_similarity_df = data.get("user_similarity_df")
-    user_movie_ratings = data.get("user_movie_ratings")
+    user_id = st.number_input(
+        "Enter a User ID:",
+        min_value=1,
+        max_value=max_user_id,
+        value=1,
+        step=1
+    )
 
-    if user_similarity_df is not None and user_movie_ratings is not None:
-        st.success("✅ Data successfully loaded!")
-
-        # ---------- PARAMETER SELECTION ----------
-        st.markdown("### ⚙️ Choose Parameters")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            user_id = st.selectbox(
-                "Select User ID",
-                user_similarity_df.index.tolist(),
-                help="Pick a user from your dataset"
-            )
-        with col2:
-            n_recommendations = st.slider(
-                "Number of Recommendations",
-                min_value=1,
-                max_value=20,
-                value=5,
-                help="Select how many recommendations to generate"
-            )
-
-        # Show parameter summary in a table
-        param_table = pd.DataFrame({
-            "Parameter": ["User ID", "Number of Recommendations"],
-            "Value": [user_id, n_recommendations]
-        })
-        st.markdown("#### 🧾 Current Parameters")
-        st.dataframe(param_table, use_container_width=True)
-
-        # ---------- GET RECOMMENDATIONS ----------
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### 🎯 Get Personalized Recommendations")
-
-        if st.button("✨ Generate Recommendations"):
+    if st.button("🎯 Get Recommendations"):
+        with st.spinner("Finding your best matches..."):
             try:
                 recommendations = get_movie_recommendations(
-                    user_id,
-                    user_similarity_df,
-                    user_movie_ratings,
-                    n_recommendations
+                    user_id=user_id,
+                    user_similarity_df=user_similarity_df,
+                    user_movie_ratings=user_movie_ratings,
+                    n_recommendations=10
                 )
 
                 if recommendations:
-                    st.success("🎉 Recommendations generated successfully!")
-                    st.markdown("### 🍿 Recommended Movies")
-                    
-                    # Display as cards
-                    for idx, movie in enumerate(recommendations, 1):
-                        st.markdown(
-                            f"""
-                            <div style='padding:10px;margin-bottom:10px;
-                                background-color:#f7f7f9;
-                                border-radius:10px;
-                                border-left:5px solid #FF4B4B;'>
-                                <b>{idx}. {movie}</b>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
+                    st.success(f"Top 10 movie recommendations for User {user_id}:")
+                    st.write("")  # spacing
+                    for i, movie in enumerate(recommendations, start=1):
+                        st.markdown(f"**{i}. {movie}** 🎞️")
                 else:
-                    st.warning("No recommendations found for this user.")
+                    st.warning("No recommendations available for this user yet.")
+
             except Exception as e:
-                st.error(f"❌ Error generating recommendations: {e}")
+                st.error(f"⚠️ Error during recommendation: {e}")
 
-    else:
-        st.error("❌ Missing keys: expected 'user_similarity_df' and 'user_movie_ratings'")
-else:
-    st.info("👆 Please upload your `.pkl` file to begin.")
-
-# ---------- FOOTER ----------
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown(
-    """
-    <div style='text-align:center; color:gray;'>
-    <small>🚀 Built with Streamlit by Poon's Recommendation System</small>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+except FileNotFoundError:
+    st.error("❌ Data file `recommendation_data.pkl` not found.")
+    st.info("Please ensure the file exists in the same directory as this script.")
+except ImportError:
+    st.error("❌ Function file `myfunction_67130700333.py` not found.")
+    st.info("Please ensure your function script is uploaded.")
